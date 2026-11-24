@@ -100,11 +100,11 @@ table.kv td:first-child { width: 118px; min-width: 0; padding-right: 12px; text-
 .gsub { font: 700 14px var(--mono); font-variant-numeric: tabular-nums; color: var(--red-text); white-space: nowrap; }
 .bbox { border-radius: 14px; }
 .budget { max-width: 1080px; }
-.brow { padding: 8px 10px; border-bottom: 1px solid var(--ink); display: grid; grid-template-columns: minmax(0, 1fr) 96px 96px 108px 46px 60px 38px; gap: 8px; align-items: center; }
+.brow { padding: 8px 10px; border-bottom: 1px solid var(--ink); display: grid; grid-template-columns: minmax(0, 1fr) 96px 96px 104px 38px; gap: 8px; align-items: center; }
 .brow:last-child { border-bottom: 0; }
 .brow .bname, .bh0 { grid-column: 1; } .brow .bcost, .bh1 { grid-column: 2; width: 100%; } .brow .bcost2, .bh2 { grid-column: 3; } .brow .chip, .bh3 { grid-column: 4; justify-self: start; }
-.brow .bbuy { grid-column: 5; } .brow .blink { grid-column: 6; width: 100%; padding: 0; } .brow .bdel { grid-column: 7; width: 38px; padding: 0; font-size: 18px; line-height: 1; }
-.brow .burl { grid-column: 1 / -1; }
+.brow .bdel { grid-column: 5; width: 38px; padding: 0; font-size: 18px; line-height: 1; }
+.brow .btxt { border: 0; background: transparent; padding: 0 4px; min-height: 0; font-size: 13.5px; line-height: 1.35; overflow-wrap: anywhere; }
 .bhead { border-bottom: 2px solid var(--ink); }
 .bh { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
 .bh1, .bh2 { text-align: right; padding-right: 10px; }
@@ -169,9 +169,13 @@ table.kv td:first-child { width: 118px; min-width: 0; padding-right: 12px; text-
   .pgrid { grid-template-columns: 1fr; }
 }
 @media (max-width: 720px) {
-  .brow { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto; }
-  .bhead { display: none; }
-  .brow .bname { grid-column: 1 / -1; } .brow .bcost { grid-column: 1; } .brow .bcost2 { grid-column: 2; } .brow .chip { grid-column: 1; grid-row: 3; } .brow .bbuy { grid-column: 2; grid-row: 3; } .brow .blink { grid-column: 3; grid-row: 2; } .brow .bdel { grid-column: 4; grid-row: 2; }
+  .brow { grid-template-columns: minmax(0, 1fr) 72px 72px 30px; gap: 6px; padding: 6px 8px; }
+  .brow .chip, .bh3 { display: none; }
+  .brow .bdel { grid-column: 4; width: 30px; min-height: 36px; }
+  .brow .btxt { font-size: 12.5px; padding: 0; }
+  .bcost { min-height: 38px; padding: 4px 6px; font-size: 13px; }
+  .bh1, .bh2 { padding-right: 4px; }
+  .ghead { flex-direction: column; align-items: flex-start; gap: 2px; }
 }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
 </style>
@@ -253,7 +257,7 @@ table.kv td:first-child { width: 118px; min-width: 0; padding-right: 12px; text-
 
 <section id="parts" hidden>
   <h2>Parts and cost</h2>
-  <p class="intro">One table for both products. Each item is one line: its name, its cost for the Arcade, its cost for the Mini, then Buy, Link and a cross to remove it. Leave a cost empty when a product does not use the item. Costs are in BDT.</p>
+  <p class="intro">One table for both products. Each item is one line: its name, its cost for the Arcade and its cost for the Mini. Only the costs can be changed. An underlined name opens the shop page for that item. An empty cost means the product does not use it. Costs are in BDT.</p>
   <div class="tiles">
     <div class="tile"><div class="k">Arcade total so far</div><div class="v" id="t1"></div></div>
     <div class="tile"><div class="k">Arcade: full-day rentals at 35,000 to recover it</div><div class="v" id="d1"></div></div>
@@ -262,7 +266,7 @@ table.kv td:first-child { width: 118px; min-width: 0; padding-right: 12px; text-
   </div>
   <div id="budget" class="budget"></div>
   <p class="saverow"><button class="btn" id="csave">Save budget</button> <button class="btn alt" id="creset">Reset everything to the starting list</button> <span id="csavemsg" role="status"></span></p>
-  <p class="note"><b>Shop price</b> comes from the linked page. <b>Guess</b> is my rough figure and is not checked against Dhaka shops. <b>Quote</b> rows count as zero until you enter a figure, so the real totals will be higher. <b>Added</b> marks items you put in yourself. Press Link on any item to paste the address of the shop page, then Buy opens it. Save keeps the budget on this device only, so other people opening the page see the starting list.</p>
+  <p class="note"><b>Shop price</b> comes from the linked page. <b>Guess</b> is my rough figure and is not checked against Dhaka shops. <b>Quote</b> rows count as zero until you enter a figure, so the real totals will be higher. <b>Added</b> marks items you put in yourself with Add an item. Those can be renamed and removed. Save keeps the budget on this device only, so other people opening the page see the starting list.</p>
 </section>
 
 <section id="build" hidden>
@@ -658,26 +662,27 @@ table.kv td:first-child { width: 118px; min-width: 0; padding-right: 12px; text-
     return c;
   }
   function rowEl(gi, r) {
-    var row = mk('div', 'brow');
-    var name = mk('input', 'bname'); name.type = 'text'; name.id = 'b' + (uid++); name.value = r.n; name.setAttribute('aria-label', 'Item name');
-    name.addEventListener('input', function () { r.n = name.value; persist(); });
+    var row = mk('div', 'brow'), mine = r.k === 'mine', name;
+    if (mine) {
+      name = mk('input', 'bname'); name.type = 'text'; name.id = 'b' + (uid++); name.value = r.n; name.setAttribute('aria-label', 'Item name');
+      name.addEventListener('input', function () { r.n = name.value; persist(); });
+    } else if (okUrl(r.u)) {
+      name = mk('a', 'bname btxt', r.n); name.href = r.u; name.target = '_blank'; name.rel = 'noopener';
+    } else {
+      name = mk('span', 'bname btxt', r.n);
+    }
     var c1 = costInput(r, 'c1', 'Arcade'), c2 = costInput(r, 'c2', 'Mini'); c2.className = 'bcost bcost2';
-    var chip = mk('span', 'chip ' + (r.k === 'mine' ? 'ok' : r.k), KIND[r.k] || 'Added');
-    var buy = mk('a', 'bbuy', 'Buy'); buy.target = '_blank'; buy.rel = 'noopener';
-    var linkBtn = mk('button', 'bbtn blink', 'Link'); linkBtn.type = 'button'; linkBtn.setAttribute('aria-label', 'Add or change the shop link for ' + r.n);
-    var del = mk('button', 'bbtn bdel', '×'); del.type = 'button'; del.setAttribute('aria-label', 'Remove ' + r.n);
-    var url = mk('input', 'burl'); url.type = 'url'; url.id = 'b' + (uid++); url.placeholder = 'https:// shop page address'; url.value = r.u || ''; url.hidden = true;
-    url.setAttribute('aria-label', 'Shop page address');
-    function showBuy() { if (okUrl(r.u)) { buy.href = r.u; buy.hidden = false; } else { buy.removeAttribute('href'); buy.hidden = true; } }
-    url.addEventListener('input', function () { r.u = url.value.trim(); showBuy(); persist(); });
-    linkBtn.onclick = function () { url.hidden = !url.hidden; if (!url.hidden) url.focus(); };
-    del.onclick = function () {
-      var rows = budget[gi].rows, at = rows.indexOf(r);
-      if (at >= 0) rows.splice(at, 1);
-      row.remove(); totals();
-    };
-    showBuy();
-    [name, c1, c2, chip, buy, linkBtn, del, url].forEach(function (n) { row.appendChild(n); });
+    var chip = mk('span', 'chip ' + (mine ? 'ok' : r.k), KIND[r.k] || 'Added');
+    [name, c1, c2, chip].forEach(function (n) { row.appendChild(n); });
+    if (mine) {
+      var del = mk('button', 'bbtn bdel', '×'); del.type = 'button'; del.setAttribute('aria-label', 'Remove this item');
+      del.onclick = function () {
+        var rows = budget[gi].rows, at = rows.indexOf(r);
+        if (at >= 0) rows.splice(at, 1);
+        row.remove(); totals();
+      };
+      row.appendChild(del);
+    }
     return row;
   }
   function renderBudget() {
@@ -689,7 +694,7 @@ table.kv td:first-child { width: 118px; min-width: 0; padding-right: 12px; text-
       host.appendChild(head);
       var box = mk('div', 'bbox');
       var cols = mk('div', 'brow bhead');
-      ['Item', 'Arcade', 'Mini', 'Basis', '', '', ''].forEach(function (t, i) { var s = mk('span', 'bh bh' + i, t); cols.appendChild(s); });
+      ['Item', 'Arcade', 'Mini', 'Basis', ''].forEach(function (t, i) { var s = mk('span', 'bh bh' + i, t); cols.appendChild(s); });
       box.appendChild(cols);
       g.rows.forEach(function (r) { box.appendChild(rowEl(gi, r)); });
       host.appendChild(box);
